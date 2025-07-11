@@ -13,6 +13,7 @@ use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PerfilXPermisoController;
 use App\Http\Controllers\DetalleComprasController;
 
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -28,8 +29,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/empresa/register', [EmpresaController::class, 'register']);
-Route::post('/empresa/login', [EmpresaController::class, 'login']);
+Route::post('/login-empresa', [EmpresaController::class, 'login']);
+Route::post('/register-empresa', [EmpresaController::class, 'register']);
 
 //Rutas Auth
 // Ruta para registrar usuarios
@@ -85,6 +86,23 @@ Route::post('/actualizar_estado_compra', [ComprasController::class, 'actualizarE
 Route::get('/total-compras', [ComprasController::class, 'getTotalCompras']);
 
 //Route::middleware('auth:sanctum')->post('/checkout', [CheckoutController::class, 'checkout']);
+
+Route::prefix('clientes')->group(function () {
+    Route::get('/', [ClientesController::class, 'index']);
+    Route::post('/', [ClientesController::class, 'store']);
+    Route::get('{id}', [ClientesController::class, 'show']);
+    Route::put('{id}', [ClientesController::class, 'update']);
+    Route::delete('{id}', [ClientesController::class, 'destroy']);
+});
+
+Route::prefix('empleados')->group(function () {
+    Route::get('/', [EmpleadosController::class, 'index']);
+    Route::post('/', [EmpleadosController::class, 'store']);
+    Route::get('{id}', [EmpleadosController::class, 'show']);
+    Route::put('{id}', [EmpleadosController::class, 'update']);
+    Route::delete('{id}', [EmpleadosController::class, 'destroy']);
+});
+
 
 //catalogo
 Route::get('/c-index', [ComprasController::class, 'index'])->name('compras.index');

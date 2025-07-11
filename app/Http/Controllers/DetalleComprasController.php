@@ -14,7 +14,11 @@ class DetalleComprasController extends Controller
     {
         $detalle_compras = DetalleCompras::all();
         //return view('users.index', compact('users')); retorna en una vista
-        return response()->json($detalle_compras); //se retorna como json
+        return response()->json([
+            'status' => true,
+            'data' => $detalle_compras
+        ]);
+
     }
 
     /**
@@ -43,21 +47,18 @@ class DetalleComprasController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show()
+    public function show($id)
     {
-        //
-        $detalle_compras = DetalleCompras::all();
-        return response()->json(['status' => true, 'data' => $detalle_compras]);
+        $detalle_compra = DetalleCompras::findOrFail($id);
+        return response()->json(['status' => true, 'data' => $detalle_compra]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, DetalleCompras $detalle_compras)
+    public function update(Request $request, $id)
     {
-        $detalle_compras = DetalleCompras::findOrFail($id); //lanzará una excepción ModelNotFoundException si no encuentra el modelo
-        $detalle_compras->update($request->all());
-        return redirect()->route('detallecompras.index')->with('success', 'DetalleCompra actualizada exitosamente');
+        $detalle_compra = DetalleCompras::findOrFail($id);
+        $detalle_compra->update($request->all());
+
+        return response()->json(['status' => true, 'message' => 'DetalleCompra actualizada']);
     }
 
     /**

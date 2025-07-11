@@ -1,70 +1,59 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Models\Empresa;
 use Illuminate\Http\Request;
+use App\Models\Empresa;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 
 class EmpresaController extends Controller
 {
-    /**
-     * Registrar una nueva empresa.
-     */
-    public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nombre'         => 'required|string|max:100|unique:empresas,nombre',
-            'rfc'            => 'required|string|max:13|unique:empresas,rfc',
-            'persona_moral'  => 'required|boolean',
-            'password'       => 'required|string|min:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        $empresa = Empresa::create([
-            'nombre'         => $request->nombre,
-            'rfc'            => $request->rfc,
-            'persona_moral'  => $request->persona_moral,
-            'password'       => Hash::make($request->password),
-        ]);
-
-        return response()->json([
-            'message' => 'Empresa registrada correctamente',
-            'empresa' => $empresa
-        ], 201);
-    }
-
-    /**
-     * Login de la empresa con nombre y contraseña.
-     */
     public function login(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nombre'   => 'required|string',
+        $request->validate([
+            'nombre' => 'required|string',
             'password' => 'required|string',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
 
         $empresa = Empresa::where('nombre', $request->nombre)->first();
 
         if (!$empresa || !Hash::check($request->password, $empresa->password)) {
-            return response()->json(['message' => 'Credenciales inválidas'], 401);
+            return response()->json([
+                'message' => 'Credenciales incorrectas'
+            ], 401);
         }
-
-        // Opcional: Generar token con Sanctum si lo usas
-        // $token = $empresa->createToken('empresa-token')->plainTextToken;
+        $token = $empresa->createToken('empresa-token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Inicio de sesión exitoso',
-            'empresa' => $empresa,
-            // 'token' => $token // Descomenta si usas Sanctum
+            'message' => 'Login exitoso',
+            'empresa' => [
+                'id' => $empresa->id,
+                'nombre' => $empresa->nombre,
+                'rfc' => $empresa->rfc,
+                'persona_moral' => $empresa->persona_moral,
+                'token' => $token // si usas Sanctum
+            ]
         ]);
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'nombre' => 'required|string|unique:empresas,nombre',
+            'rfc' => 'required|string|unique:empresas,rfc',
+            'persona_moral' => 'required|boolean',
+            'password' => 'required|string|min:6|confirmed',  // El campo password_confirmation debe llegar también
+        ]);
+
+        $empresa = Empresa::create([
+            'nombre' => $validated['nombre'],
+            'rfc' => $validated['rfc'],
+            'persona_moral' => $validated['persona_moral'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return response()->json([
+            'message' => 'Empresa registrada con éxito',
+            'empresa' => $empresa
+        ], 201);
     }
 }
