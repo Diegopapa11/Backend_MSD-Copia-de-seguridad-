@@ -9,6 +9,7 @@ class Perfiles extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'id_empresa',
         'id_empleado',
         'foto_perfil',
         'fecha_creacion',

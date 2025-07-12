@@ -13,6 +13,7 @@ class Clientes extends Model
         'email',
         'compras',
         'antiguedad',
+        'id_empresa'
     ];
 
 }

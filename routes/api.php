@@ -29,18 +29,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+
 Route::post('/login-empresa', [EmpresaController::class, 'login']);
 Route::post('/register-empresa', [EmpresaController::class, 'register']);
-
-//Rutas Auth
-// Ruta para registrar usuarios
-Route::post('/register', [AuthController::class, 'register']);
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-// Ruta para el inicio de sesión
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-// Ruta para cerrar sesión
-Route::middleware('auth:sanctum')-> post('/logout', [AuthController::class, 'logout']);
 
 //Rutas de Perfil
 Route::get('/indexperfil', [PerfilController::class, 'index'])->name('perfil.index');

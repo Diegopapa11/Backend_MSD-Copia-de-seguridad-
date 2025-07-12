@@ -9,6 +9,7 @@ class Perfil_x_Permiso extends Model
 {
     use HasFactory;
         protected $fillable = [
+        'id_empresa',
         'id_perfil',
         'id_permisos',
     ];

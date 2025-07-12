@@ -15,6 +15,7 @@ class Empleados extends Authenticatable
     protected $table = 'empleados';
 
     protected $fillable = [
+        'id_empresa',
         'id_perfil',
         'id_permiso',
         'name',
@@ -47,5 +48,11 @@ class Empleados extends Authenticatable
     public function permiso()
     {
         return $this->belongsTo(Permiso::class, 'id_permiso');
+    }
+
+    
+    public function empresa()
+    {
+        return $this->belongsTo(Empresa::class, 'id_empresa');
     }
 }

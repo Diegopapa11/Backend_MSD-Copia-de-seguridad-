@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('compras', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
             $table->unsignedBigInteger('id_empleado')->nullable();
             $table->unsignedBigInteger('id_detalle_compras')->nullable();
             $table->timestamp('fecha_compra')->useCurrent();

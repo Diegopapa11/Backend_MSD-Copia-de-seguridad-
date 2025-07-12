@@ -9,6 +9,7 @@ class MetodoPago extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'id_empresa',
         'nombre',
         'description',
     ];
