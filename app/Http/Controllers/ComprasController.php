@@ -9,83 +9,164 @@ use App\Models\User;
 
 class ComprasController extends Controller
 {
-//API DE CREAR COMPRA
+    //API DE CREAR COMPRA
     public function crearCompra(Request $request)
     {
-        // Paso 1: Verificar si el usuario está autenticado
         if (auth()->check()) {
-            // Obtener el ID del usuario autenticado
-            $usuarioId = auth()->user()->id;
+            $idEmpleado = auth()->user()->id;
 
-            // Paso 2: Solicitud de Información de Detalle (?)
             $detallesCompra = $request->input('detallecompra');
-            
-            // Paso 3: Almacenamiento en la Tabla de Compra
-            $compra = Compras::create([
-                'id_usuario' => $usuarioId,
-                'id_producto' => $request->input('id_producto'),
-                'total' => $request->input('total'),
-                'estado' => 1, // Por defecto
-            ]);
-            
+            $idCliente = $request->input('id_cliente'); 
+            $total = $request->input('total');
+            $idProducto = $request->input('id_producto');
+            $idMetodoPago = $request->input('metodo_pago_id'); // <-- Captura método pago
 
-            // Paso 4: Obtención del ID de Compra
+            // Validar que id_metodo_pago exista en la tabla de métodos de pago (opcional)
+            /*
+            if (!\App\Models\MetodoPago::find($idMetodoPago)) {
+                return response()->json(['error' => 'Método de pago inválido'], 422);
+            }
+            */
+
+            // Obtener id_empresa del empleado autenticado para guardarlo en compras y detalle_compras
+            $empleado = \App\Models\Empleados::find($idEmpleado);
+            $idEmpresa = $empleado ? $empleado->id_empresa : null;
+
+            // Crear compra con id_empresa y método de pago
+            $compra = Compras::create([
+                'id_empleado' => $idEmpleado,
+                'id_producto' => $idProducto,
+                'total' => $total,
+                'estado' => 1,
+                'id_empresa' => $idEmpresa,
+                'metodo_pago_id' => $idMetodoPago,  // <-- Guardar método pago aquí
+            ]);
+
             $compraId = $compra->id;
 
-            // Paso 5: Almacenamiento en la Tabla de Detalle
+            // Guardar detalles de compra con id_empresa, id_compra, etc.
             foreach ($detallesCompra as $detalle) {
                 DetalleCompras::create([
                     'id_producto' => $detalle['id_producto'],
                     'id_compra' => $compraId,
                     'cantidad' => $detalle['cantidad'],
                     'precio' => $detalle['precio'],
+                    'id_empresa' => $idEmpresa,
+                    'id_cliente' => $idCliente
                 ]);
+
+                // Actualizar stock por cada detalle
+                $producto = \App\Models\Productos::find($detalle['id_producto']);
+                if ($producto) {
+                    $producto->stock = max(0, $producto->stock - $detalle['cantidad']);
+                    $producto->save();
+                }
             }
 
-            // Paso 6: Respuesta
+            // Guardar compra en JSON de cliente
+            if ($idCliente) {
+                $cliente = \App\Models\Clientes::find($idCliente);
+                if ($cliente) {
+                    $comprasAnteriores = $cliente->compras ? json_decode($cliente->compras, true) : [];
+                    $nuevaCompra = [
+                        'id_compra' => $compraId,
+                        'fecha' => now()->toDateTimeString(),
+                        'productos' => $detallesCompra,
+                        'total' => $total,
+                        'id_metodo_pago' => $idMetodoPago, // también lo guardas aquí si quieres
+                    ];
+                    $comprasAnteriores[] = $nuevaCompra;
+                    $cliente->compras = json_encode($comprasAnteriores);
+                    $cliente->save();
+                }
+            }
+
+            // Guardar compra en JSON de empleado
+            if ($idEmpleado) {
+                $empleado = \App\Models\Empleados::find($idEmpleado);
+                if ($empleado) {
+                    $comprasAnteriores = $empleado->ventas ? json_decode($empleado->ventas, true) : [];
+                    $nuevaCompra = [
+                        'id_cliente' => $idCliente,
+                        'id_compra' => $compraId,
+                        'fecha' => now()->toDateTimeString(),
+                        'productos' => $detallesCompra,
+                        'total' => $total,
+                        'id_metodo_pago' => $idMetodoPago,
+                    ];
+                    $comprasAnteriores[] = $nuevaCompra;
+                    $empleado->ventas = json_encode($comprasAnteriores);
+                    $empleado->save();
+                }
+            }
+
             return response()->json(['id_compra' => $compraId]);
         } else {
-            // Manejar el caso en el que el usuario no está autenticado
             return response()->json(['error' => 'Usuario no autenticado'], 401);
         }
     }
+
 
 //API DE ACTULIZAR ESTADO DE COMPRA (1=>2)
     public function actualizarEstadoCompra(Request $request)
     {
         $idCompra = $request->input('id_compra');
-        $estado = $request->input('estado');
+        $nuevoEstado = $request->input('estado');
 
-        $compras = Compras::find($idCompra);
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Usuario no autenticado'], 401);
+        }
 
-        if (!$compras) {
+        $empleado = auth()->user();
+        $idEmpresa = $empleado->id_empresa;
+
+        // Buscar la compra
+        $compra = Compras::with('detalles')->find($idCompra);
+
+        if (!$compra) {
             return response()->json(['mensaje' => 'Compra no encontrada'], 404);
         }
 
-        // Verificar si la compra ya está en proceso (estado diferente de 1 - En proceso)
-        if ($compras->estado != 1) {
-            return response()->json(['mensaje' => 'La compra ya no está en proceso, no se pueden agregar más productos'], 400);
+        // Verificar que la compra pertenece a la misma empresa del empleado
+        if ($compra->id_empresa !== $idEmpresa) {
+            return response()->json(['mensaje' => 'No tienes permiso para modificar esta compra'], 403);
         }
 
-        // Actualizar estado de la compra
-        $compras->estado = $estado;
-        $compras->save();
+        // Verificar si ya no está en proceso
+        if ($compra->estado != 1) {
+            return response()->json(['mensaje' => 'La compra ya no está en proceso'], 400);
+        }
 
-        // Si la compra es exitosa, realizar acciones adicionales
-        if ($estado == 2) {
-                // Recorrer los detalles de la compra
-                foreach ($compras->detalles as $detalle) {
-                    // Registrar en la tabla de usuario el nuevo producto comprado
-                    $usuario = User::find($compras->id_usuario);
-                    $datos = $usuario->datos ?? []; // Si $usuario->datos es null, inicializa $datos como un array vacío
-                    array_push($datos, ['id_producto' => $detalle->id_producto]);
-                    $usuario->datos = $datos;
-                    $usuario->save();
+        // Actualizar estado
+        $compra->estado = $nuevoEstado;
+        $compra->save();
+
+        // Si el estado es 2 (finalizada), registrar historial en cliente
+        if ($nuevoEstado == 2 && $compra->id_cliente) {
+            $cliente = \App\Models\Clientes::find($compra->id_cliente);
+
+            if ($cliente) {
+                $historial = $cliente->compras ?? [];
+                if (is_string($historial)) {
+                    $historial = json_decode($historial, true);
                 }
+
+                foreach ($compra->detalles as $detalle) {
+                    $historial[] = [
+                        'id_producto' => $detalle->id_producto,
+                        'cantidad' => $detalle->cantidad,
+                        'precio' => $detalle->precio
+                    ];
+                }
+
+                $cliente->compras = $historial;
+                $cliente->save();
             }
+        }
 
         return response()->json(['mensaje' => 'Estado de compra actualizado']);
     }
+
 
 //CRUD
     public function index()
@@ -117,5 +198,34 @@ class ComprasController extends Controller
         $compras = Compras::all();
         return response()->json(['compra' => $compras]);
     }
+
+    public function reporteComprasConNombres(Request $request)
+    {
+        $idEmpresa = $request->query('id_empresa'); // Obtener el ID de la empresa desde la URL
+
+        // Traer solo las compras de esa empresa con relaciones: empleado, producto, metodoPago
+        $compras = Compras::with(['empleado', 'producto', 'metodoPago'])
+            ->when($idEmpresa, function ($query, $idEmpresa) {
+                $query->where('id_empresa', $idEmpresa);
+            })
+            ->get();
+
+        $result = $compras->map(function ($compra) {
+            return [
+                'id' => $compra->id,
+                'empleado' => $compra->empleado->name ?? 'N/A',
+                'producto' => $compra->producto->name ?? 'N/A',
+                'metodo_pago' => $compra->metodoPago->nombre ?? 'N/A',
+                'total' => $compra->total,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+
 
 }

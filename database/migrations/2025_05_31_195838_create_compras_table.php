@@ -15,10 +15,11 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('id_empresa')->nullable();
             $table->unsignedBigInteger('id_empleado')->nullable();
-            $table->unsignedBigInteger('id_detalle_compras')->nullable();
+            //$table->unsignedBigInteger('id_producto')->nullable();
             $table->timestamp('fecha_compra')->useCurrent();
             $table->unsignedTinyInteger('estado')->default(1);
             $table->unsignedBigInteger('metodo_pago_id')->nullable();
+            $table->integer('total');
             $table->timestamps();
         });
 

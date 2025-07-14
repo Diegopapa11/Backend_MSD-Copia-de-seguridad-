@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Clientes;
+use App\Models\Empresa;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
@@ -15,42 +16,25 @@ class ClientesController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
-        try {
-            $perPage = $request->get('per_page', 15);
-            $search = $request->get('search');
+        $idEmpresa = $request->query('id_empresa');
 
-            $query = Clientes::query();
-
-            if ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-            }
-
-            $clientes = $query->paginate($perPage);
-
-            return response()->json([
-                'success' => true,
-                'data' => $clientes->items(),
-                'pagination' => [
-                    'current_page' => $clientes->currentPage(),
-                    'last_page' => $clientes->lastPage(),
-                    'per_page' => $clientes->perPage(),
-                    'total' => $clientes->total(),
-                    'from' => $clientes->firstItem(),
-                    'to' => $clientes->lastItem()
-                ],
-                'message' => 'Clientes obtenidos correctamente'
-            ], 200);
-        } catch (\Exception $e) {
+        if (!$idEmpresa) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener clientes',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
+                'message' => 'Se requiere id_empresa para filtrar clientes',
+            ], 400);
         }
+
+        $clientes = Clientes::where('id_empresa', $idEmpresa)->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $clientes
+        ]);
     }
+
 
     /**
      * Crear un nuevo cliente
@@ -64,19 +48,36 @@ class ClientesController extends Controller
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255|min:2',
                 'email' => 'required|email|unique:clientes,email|max:255',
-                'compras' => 'required|numeric|min:0|max:999999.99',
-                'antiguedad' => 'required|integer|min:0|max:100'
+                'compras' => 'nullable|array',
+                'antiguedad' => 'required|date',
+                'empresa_name' => 'required|string|exists:empresas,nombre' // ← nombre coherente
             ], [
                 'name.required' => 'El nombre es obligatorio',
                 'name.min' => 'El nombre debe tener al menos 2 caracteres',
                 'email.required' => 'El email es obligatorio',
                 'email.email' => 'El formato del email no es válido',
                 'email.unique' => 'Este email ya está registrado',
-                'compras.required' => 'El monto de compras es obligatorio',
-                'compras.numeric' => 'El monto de compras debe ser un número',
                 'antiguedad.required' => 'La antigüedad es obligatoria',
-                'antiguedad.integer' => 'La antigüedad debe ser un número entero'
+                'antiguedad.date' => 'La antigüedad debe ser una fecha',
+                'empresa_name.required' => 'El nombre de la empresa es obligatorio.',
+                'empresa_name.exists' => 'La empresa seleccionada no existe en el sistema.',
             ]);
+
+            // Buscar empresa por nombre
+            $empresa = Empresa::where('nombre', $validatedData['empresa_name'])->first();
+
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró la empresa',
+                ], 404);
+            }
+
+            // Agregar id_empresa al array validado
+            $validatedData['id_empresa'] = $empresa->id;
+
+            // Eliminar empresa_name antes de crear el cliente
+            unset($validatedData['empresa_name']);
 
             $cliente = Clientes::create($validatedData);
 
@@ -102,6 +103,7 @@ class ClientesController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Obtener un cliente específico

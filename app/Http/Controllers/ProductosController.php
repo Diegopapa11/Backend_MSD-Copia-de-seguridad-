@@ -4,6 +4,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Productos;
+use App\Models\Empresa;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -15,10 +16,21 @@ class ProductosController extends Controller
     /**
      * Mostrar lista de todos los productos
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $productos = Productos::all();
+            // Obtener id_empresa del query string (por ejemplo: /api/P-index?id_empresa=3)
+            $idEmpresa = $request->query('id_empresa');
+
+            if (!$idEmpresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Se requiere id_empresa para filtrar productos',
+                ], 400);
+            }
+
+            $productos = Productos::where('id_empresa', $idEmpresa)->get();
+
             return response()->json([
                 'success' => true,
                 'data' => $productos
@@ -31,6 +43,10 @@ class ProductosController extends Controller
             ], 500);
         }
     }
+
+
+
+
 
     /**
      * Mostrar un producto específico
@@ -57,13 +73,19 @@ class ProductosController extends Controller
      */
     public function store(Request $request)
     {
-        // Validación de datos
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'empresa_name' => 'required|string|exists:empresas,nombre'
+        ], [
+            'name.required' => 'El nombre del producto es obligatorio.',
+            'price.required' => 'El precio del producto es obligatorio.',
+            'stock.required' => 'El stock del producto existente es obligatoria.',
+            'empresa_name.required' => 'El nombre de la empresa es obligatorio.',
+            'empresa_name.exists' => 'La empresa seleccionada no existe en el sistema.',
         ]);
 
         if ($validator->fails()) {
@@ -75,9 +97,20 @@ class ProductosController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'price', 'stock', 'description']);
+            $validatedData = $validator->validated();
+            
+            $empresa = Empresa::where('nombre', $validatedData['empresa_name'])->first();
 
-            // Manejo de imagen si se proporciona
+            if (!$empresa || !$empresa->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo obtener la empresa del usuario autenticado',
+                ], 403);
+            }
+
+            $data = $request->only(['name', 'price', 'stock', 'description']);
+            $data['id_empresa'] = $empresa->id;
+
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $imageName = time() . '_' . $image->getClientOriginalName();
@@ -101,6 +134,8 @@ class ProductosController extends Controller
             ], 500);
         }
     }
+
+
 
     /**
      * Actualizar un producto existente

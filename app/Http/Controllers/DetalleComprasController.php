@@ -74,4 +74,6 @@ class DetalleComprasController extends Controller
             'message' => 'Usuario eliminado correctamente',
         ]);
     }
+
+
 }

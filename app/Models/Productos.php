@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+
 class Productos extends Model
 {
     use HasFactory;
@@ -16,4 +17,11 @@ class Productos extends Model
         'description',
         'image',
     ];
+
+    public function empresa()
+    {
+        return $this->belongsTo(Empresa::class, 'id_empresa');
+    }
 }
+
+

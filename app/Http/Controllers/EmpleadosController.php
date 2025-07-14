@@ -16,10 +16,19 @@ class EmpleadosController extends Controller
     /**
      * Listar todos los empleados.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Empleados::all());
+        $idEmpresa = $request->query('id_empresa');
+
+        if ($idEmpresa) {
+            $empleados = Empleados::where('id_empresa', $idEmpresa)->get();
+        } else {
+            $empleados = Empleados::all(); // Esto debería evitarse si no quieres mostrar todos
+        }
+
+        return response()->json($empleados);
     }
+
 
     /**
      * Registrar un nuevo empleado con perfil, permiso fijo (id = 2) y ventas desde Compras.
@@ -45,13 +54,11 @@ class EmpleadosController extends Controller
         // Crear perfil asociado al empleado
         Perfil::create([
             'empleado_id' => $empleado->id,
-            // otros campos del perfil si es necesario, como 'telefono' => $request->telefono
         ]);
 
-        // Asignar permiso con id = 2 (relación many-to-many)
         $empleado->permisos()->attach(2);
 
-        // Generar ventas desde la tabla Compras (solo para mostrar)
+        
         $ventas = $this->generarVentasDesdeCompras($empleado->id);
 
         return response()->json([
