@@ -141,13 +141,14 @@ class ClientesController extends Controller
                 'name' => 'sometimes|required|string|max:255|min:2',
                 'email' => 'sometimes|required|email|unique:clientes,email,' . $id . '|max:255',
                 'compras' => 'sometimes|required|numeric|min:0|max:999999.99',
-                'antiguedad' => 'sometimes|required|integer|min:0|max:100'
+                'antiguedad' => 'sometimes|required|date|after_or_equal:1900-01-01|before_or_equal:today',
+
             ], [
                 'name.min' => 'El nombre debe tener al menos 2 caracteres',
                 'email.email' => 'El formato del email no es válido',
                 'email.unique' => 'Este email ya está registrado',
                 'compras.numeric' => 'El monto de compras debe ser un número',
-                'antiguedad.integer' => 'La antigüedad debe ser un número entero'
+                'antiguedad' => 'La antigüedad debe de ser una fecha correspondiente'
             ]);
 
             $cliente->update($validatedData);

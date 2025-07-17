@@ -77,15 +77,15 @@ class ProductosController extends Controller
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'empresa_name' => 'required|string|exists:empresas,nombre'
+            'id_empresa' => 'required|string|exists:empresas,id'
         ], [
             'name.required' => 'El nombre del producto es obligatorio.',
             'price.required' => 'El precio del producto es obligatorio.',
-            'stock.required' => 'El stock del producto existente es obligatoria.',
-            'empresa_name.required' => 'El nombre de la empresa es obligatorio.',
-            'empresa_name.exists' => 'La empresa seleccionada no existe en el sistema.',
+            'stock.required' => 'El stock del producto existente es obligatorio.',
+            'id-empresa.required' => 'El id de la empresa es obligatorio.',
+            'id-empresa.exists' => 'La empresa seleccionada no existe en el sistema.',
         ]);
 
         if ($validator->fails()) {
@@ -98,8 +98,8 @@ class ProductosController extends Controller
 
         try {
             $validatedData = $validator->validated();
-            
-            $empresa = Empresa::where('nombre', $validatedData['empresa_name'])->first();
+
+            $empresa = Empresa::where('nombre', $validatedData['id_empresa'])->first();
 
             if (!$empresa || !$empresa->id) {
                 return response()->json([
@@ -137,6 +137,7 @@ class ProductosController extends Controller
 
 
 
+
     /**
      * Actualizar un producto existente
      */
@@ -148,7 +149,8 @@ class ProductosController extends Controller
             'price' => 'sometimes|required|numeric|min:0',
             'stock' => 'sometimes|required|integer|min:0',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'id_empresa' => 'required|string|exists:empresas,id'
         ]);
 
         if ($validator->fails()) {
