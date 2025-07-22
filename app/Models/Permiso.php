@@ -9,6 +9,7 @@ class Permiso extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'id_empresa',
         'name',
         'clave_permiso',
         'decription',

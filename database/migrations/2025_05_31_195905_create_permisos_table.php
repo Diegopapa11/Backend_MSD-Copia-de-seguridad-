@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('permisos', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
             $table->string('name', 100);
             $table->string('clave_permiso', 15);
             $table->string('decription', 100);

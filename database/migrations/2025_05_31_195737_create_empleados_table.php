@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('empleados', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
             $table->unsignedBigInteger('id_perfil')->nullable();
             $table->unsignedBigInteger('id_permiso')->nullable();
             $table->string('name', 100);

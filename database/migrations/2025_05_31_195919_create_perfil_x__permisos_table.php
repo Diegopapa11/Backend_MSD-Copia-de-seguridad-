@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('perfil_x__permisos', function (Blueprint $table) {
+            $table->unsignedBigInteger('id_empresa')->nullable();
             $table->unsignedBigInteger('id_perfil')->constrained('perfiles');
             $table->unsignedBigInteger('id_permisos')->constrained('permisos');
             $table->timestamps();

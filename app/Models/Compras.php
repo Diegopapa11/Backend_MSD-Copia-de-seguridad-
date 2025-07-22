@@ -9,11 +9,38 @@ class Compras extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'id_empresa',
         'id_empleado',
-        'id_detalle_compras',
+        //'id_producto',
         'fecha_compra',
         'estado',
         'metodo_pago_id',
+        'total'
     ];
+
+    public function detalles()
+    {
+        return $this->hasMany(DetalleCompras::class, 'id_compra');
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Clientes::class, 'id_cliente');
+    }
+
+    public function empleado()
+    {
+        return $this->belongsTo(Empleados::class, 'id_empleado');
+    }
+
+    public function producto()
+    {
+        return $this->belongsTo(Productos::class, 'id_producto');
+    }
+
+    public function metodoPago()
+    {
+        return $this->belongsTo(MetodoPago::class, 'metodo_pago_id');
+    }
 
 }

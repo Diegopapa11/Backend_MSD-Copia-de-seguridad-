@@ -41,7 +41,20 @@ class EmpresaController extends Controller
             'nombre' => 'required|string|unique:empresas,nombre',
             'rfc' => 'required|string|unique:empresas,rfc',
             'persona_moral' => 'required|boolean',
-            'password' => 'required|string|min:6|confirmed',  // El campo password_confirmation debe llegar también
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/[a-zA-Z]/', 
+                'regex:/\d/', 
+                'regex:/[\W_]/',
+            ],
+        ], [
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'La confirmación de la contraseña no coincide.',
+            'password.regex' => 'La contraseña debe incluir al menos una letra, un número y un carácter especial.',
         ]);
 
         $empresa = Empresa::create([

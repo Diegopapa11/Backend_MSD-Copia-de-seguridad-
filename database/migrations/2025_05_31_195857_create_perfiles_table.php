@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('perfiles', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
             $table->foreignId('id_empleado')->constrained('empleados');
             $table->string('foto_perfil', 100)->nullable();
             $table->timestamp('fecha_creacion')->nullable();
